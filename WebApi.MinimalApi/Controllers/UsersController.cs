@@ -21,7 +21,7 @@ public class UsersController : Controller
         _linkGenerator = linkGenerator;
     }
 
-    [HttpGet("{userId}")]
+    [HttpGet("{userId}", Name=nameof(GetUserById))]
     [Produces("application/json", "application/xml")]
     public ActionResult GetUserById([FromRoute] Guid userId)
     {
@@ -85,8 +85,21 @@ public class UsersController : Controller
     }
 
     [HttpPost]
-    public IActionResult CreateUser([FromBody] object user)
+    [Produces("application/json", "application/xml")]
+    public IActionResult CreateUser([FromBody] CreateUserDto? user)
     {
-        throw new NotImplementedException();
+        if (user == null)
+            return BadRequest();
+        if (!ModelState.IsValid)
+            return UnprocessableEntity(ModelState);
+        if (!user.Login.All(char.IsLetterOrDigit))
+        {
+            ModelState.AddModelError("Login", "Login should be alphanumeric");
+            return UnprocessableEntity(ModelState);
+        }
+        
+        var userEntity = _mapper.Map<UserEntity>(user);
+        _userRepository.Insert(userEntity);
+        return CreatedAtRoute(nameof(GetUserById), new{userId=userEntity.Id}, userEntity.Id);
     }
 }
