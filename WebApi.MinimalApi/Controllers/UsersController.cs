@@ -27,7 +27,7 @@ public class UsersController : Controller
     [Produces("application/json", "application/xml")]
     public ActionResult GetUserById([FromRoute] Guid userId)
     {    
-        if (Request.Method == "HEAD")
+        if HttpMethods.IsHead(Request.Method)
             Response.Body = Stream.Null;
         var user = userRepository.FindById(userId);
         if (user == null)
