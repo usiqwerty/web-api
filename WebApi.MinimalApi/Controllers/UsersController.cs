@@ -23,9 +23,12 @@ public class UsersController : Controller
     }
 
     [HttpGet("{userId}", Name=nameof(GetUserById))]
+    [HttpHead("{userId}")]
     [Produces("application/json", "application/xml")]
     public ActionResult GetUserById([FromRoute] Guid userId)
-    {
+    {    
+        if (Request.Method == "HEAD")
+            Response.Body = Stream.Null;
         var user = userRepository.FindById(userId);
         if (user == null)
         {
@@ -151,4 +154,25 @@ public class UsersController : Controller
 
         return NoContent();
     }
+    
+    [HttpDelete("{userId}")]
+    [Produces("application/json", "application/xml")]
+    [SwaggerResponse(204, "Пользователь удален")]
+    [SwaggerResponse(404, "Пользователь не найден")]
+    public IActionResult DeleteUser([FromRoute] Guid userId)
+    {
+        if (userId == Guid.Empty || userRepository.FindById(userId) == null)
+            return NotFound();
+
+        userRepository.Delete(userId);
+        return NoContent();
+    }
+
+    [HttpOptions]
+    [SwaggerResponse(200, "OK")]
+    public IActionResult Options()
+    {
+        Response.Headers.Append("Allow", new[] {"GET", "POST", "OPTIONS"});
+        return Ok();
+    }    
 }
