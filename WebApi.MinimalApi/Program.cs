@@ -19,12 +19,8 @@ builder.Services.AddSingleton<IUserRepository, InMemoryUserRepository>();
 
 builder.Services.AddControllers(options =>
     {
-        // Этот OutputFormatter позволяет возвращать данные в XML, если требуется.
         options.OutputFormatters.Add(new XmlDataContractSerializerOutputFormatter());
-        // Эта настройка позволяет отвечать кодом 406 Not Acceptable на запросы неизвестных форматов.
         options.ReturnHttpNotAcceptable = true;
-        // Эта настройка приводит к игнорированию заголовка Accept, когда он содержит */*
-        // Здесь она нужна, чтобы в этом случае ответ возвращался в формате JSON
         options.RespectBrowserAcceptHeader = true;
     })
     
@@ -41,11 +37,12 @@ builder.Services.AddControllers(options =>
 
 builder.Services.AddAutoMapper(cfg =>
 {
-    // Определяем маппинг User → UserDto
     cfg.CreateMap<UserEntity, UserDto>()
         .ForMember(dest => dest.FullName,
             opt => opt.MapFrom(src => $"{src.LastName} {src.FirstName}"));
     cfg.CreateMap<CreateUserDto, UserEntity>();
+    cfg.CreateMap<UpdateUserDto, UserEntity>();
+    cfg.CreateMap<UserEntity, UpdateUserDto>();
     cfg.CreateMap<UpdateUserDto, UserEntity>();
 }, Array.Empty<Assembly>());
 
