@@ -11,28 +11,28 @@ namespace WebApi.MinimalApi.Controllers;
 [ApiController]
 public class UsersController : Controller
 {
-    private readonly IUserRepository _userRepository;
-    private readonly IMapper _mapper;
-    private readonly LinkGenerator _linkGenerator;
+    private readonly IUserRepository userRepository;
+    private readonly IMapper mapper;
+    private readonly LinkGenerator linkGenerator;
 
     public UsersController(IUserRepository userRepository, IMapper mapper,  LinkGenerator linkGenerator)
     {
-        _userRepository = userRepository;
-        _mapper = mapper;
-        _linkGenerator = linkGenerator;
+        this.userRepository = userRepository;
+        this.mapper = mapper;
+        this.linkGenerator = linkGenerator;
     }
 
     [HttpGet("{userId}", Name=nameof(GetUserById))]
     [Produces("application/json", "application/xml")]
     public ActionResult GetUserById([FromRoute] Guid userId)
     {
-        var user = _userRepository.FindById(userId);
+        var user = userRepository.FindById(userId);
         if (user == null)
         {
             return NotFound();
         }
 
-        var dto = _mapper.Map<UserDto>(user);
+        var dto = mapper.Map<UserDto>(user);
 
         return Ok(dto);
     }
@@ -41,30 +41,26 @@ public class UsersController : Controller
     [Produces("application/json", "application/xml")]
     public IActionResult GetUsers([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
-        // Ограничиваем параметры
         if (pageNumber < 1) pageNumber = 1;
         if (pageSize < 1) pageSize = 1;
         if (pageSize > 20) pageSize = 20;
 
-        // Получаем пользователей из репозитория
-        var pageList = _userRepository.GetPage(pageNumber, pageSize);
+        var pageList = userRepository.GetPage(pageNumber, pageSize);
 
-        var users = _mapper.Map<IEnumerable<UserDto>>(pageList);
+        var users = mapper.Map<IEnumerable<UserDto>>(pageList);
 
-        // Считаем инфу для пагинации
         var totalCount = pageList.TotalCount;
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
-        // Генерируем ссылки на предыдущую и следующую страницы
         var previousPageLink = pageNumber > 1
-            ? _linkGenerator.GetUriByRouteValues(
+            ? linkGenerator.GetUriByRouteValues(
                 HttpContext,
                 "GetUsers",
                 new { pageNumber = pageNumber - 1, pageSize })
             : null;
 
         var nextPageLink = pageNumber < totalPages
-            ? _linkGenerator.GetUriByRouteValues(
+            ? linkGenerator.GetUriByRouteValues(
                 HttpContext,
                 "GetUsers",
                 new { pageNumber = pageNumber + 1, pageSize })
@@ -99,8 +95,8 @@ public class UsersController : Controller
             return UnprocessableEntity(ModelState);
         }
         
-        var userEntity = _mapper.Map<UserEntity>(user);
-        var createdEntity = _userRepository.Insert(userEntity);
+        var userEntity = mapper.Map<UserEntity>(user);
+        var createdEntity = userRepository.Insert(userEntity);
         return CreatedAtRoute(nameof(GetUserById), new{userId=createdEntity.Id}, createdEntity.Id);
     }
 
@@ -118,8 +114,8 @@ public class UsersController : Controller
         
         user.Id = userId;
         
-        var userEntity = _mapper.Map<UserEntity>(user);
-        _userRepository.UpdateOrInsert(userEntity, out var inserted);
+        var userEntity = mapper.Map<UserEntity>(user);
+        userRepository.UpdateOrInsert(userEntity, out var inserted);
         if (inserted)
             return CreatedAtRoute(nameof(GetUserById), new{userId=userEntity.Id}, userEntity.Id);
         return NoContent();
@@ -139,19 +135,19 @@ public class UsersController : Controller
         if (!ModelState.IsValid)
             return UnprocessableEntity(ModelState);
 
-        var userEntity = _userRepository.FindById(userId.Value);
+        var userEntity = userRepository.FindById(userId.Value);
         if (userEntity == null)
             return NotFound();
 
-        var userToPatch = _mapper.Map<UpdateUserDto>(userEntity);
+        var userToPatch = mapper.Map<UpdateUserDto>(userEntity);
 
         patchDoc.ApplyTo(userToPatch, ModelState);
 
         if (!TryValidateModel(userToPatch))
             return UnprocessableEntity(ModelState);
 
-        _mapper.Map(userToPatch, userEntity);
-        _userRepository.Update(userEntity);
+        mapper.Map(userToPatch, userEntity);
+        userRepository.Update(userEntity);
 
         return NoContent();
     }
